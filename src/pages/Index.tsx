@@ -1,12 +1,13 @@
-
 import { useState, useEffect } from "react";
 import { StudyDashboard } from "@/components/StudyDashboard";
 import { SubjectList } from "@/components/SubjectList";
 import { StudyProgress } from "@/components/StudyProgress";
+import { QuestionTracker } from "@/components/QuestionTracker";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, Target, TrendingUp } from "lucide-react";
-import { Subject, StudyData } from "@/types/study";
+import { Subject, StudyData, QuestionRecord } from "@/types/study";
 
 const initialSubjects: Subject[] = [
   // Direito Constitucional
@@ -44,14 +45,32 @@ const Index = () => {
     return saved ? JSON.parse(saved) : initialSubjects;
   });
 
+  const [questionRecords, setQuestionRecords] = useState<QuestionRecord[]>(() => {
+    const saved = localStorage.getItem('question-records');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   useEffect(() => {
     localStorage.setItem('study-progress', JSON.stringify(subjects));
   }, [subjects]);
+
+  useEffect(() => {
+    localStorage.setItem('question-records', JSON.stringify(questionRecords));
+  }, [questionRecords]);
 
   const updateSubject = (id: string, field: keyof Pick<Subject, 'studied' | 'reviewed' | 'practiced'>, value: boolean) => {
     setSubjects(prev => prev.map(subject => 
       subject.id === id ? { ...subject, [field]: value } : subject
     ));
+  };
+
+  const addQuestionRecord = (record: Omit<QuestionRecord, 'id' | 'date'>) => {
+    const newRecord: QuestionRecord = {
+      ...record,
+      id: crypto.randomUUID(),
+      date: new Date().toISOString()
+    };
+    setQuestionRecords(prev => [...prev, newRecord]);
   };
 
   const resetProgress = () => {
@@ -62,6 +81,7 @@ const Index = () => {
       practiced: false
     }));
     setSubjects(resetSubjects);
+    setQuestionRecords([]);
   };
 
   const studyData: StudyData = {
@@ -70,6 +90,7 @@ const Index = () => {
     studiedCount: subjects.filter(s => s.studied).length,
     reviewedCount: subjects.filter(s => s.reviewed).length,
     practicedCount: subjects.filter(s => s.practiced).length,
+    questionRecords,
   };
 
   return (
@@ -136,20 +157,35 @@ const Index = () => {
         {/* Study Dashboard */}
         <StudyDashboard data={studyData} />
 
-        {/* Subject List */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-primary">Lista de Matérias</h2>
-            <Button 
-              onClick={resetProgress} 
-              variant="outline"
-              className="bg-white hover:bg-gray-50"
-            >
-              Resetar Progresso
-            </Button>
-          </div>
-          <SubjectList subjects={subjects} onUpdate={updateSubject} />
-        </div>
+        {/* Tabs para organizar o conteúdo */}
+        <Tabs defaultValue="subjects" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="subjects">Lista de Matérias</TabsTrigger>
+            <TabsTrigger value="questions">Controle de Questões</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="subjects" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-primary">Lista de Matérias</h2>
+              <Button 
+                onClick={resetProgress} 
+                variant="outline"
+                className="bg-white hover:bg-gray-50"
+              >
+                Resetar Progresso
+              </Button>
+            </div>
+            <SubjectList subjects={subjects} onUpdate={updateSubject} />
+          </TabsContent>
+          
+          <TabsContent value="questions" className="space-y-4">
+            <QuestionTracker 
+              subjects={subjects}
+              questionRecords={questionRecords}
+              onAddRecord={addQuestionRecord}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

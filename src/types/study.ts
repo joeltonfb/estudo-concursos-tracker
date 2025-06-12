@@ -8,12 +8,21 @@ export interface Subject {
   practiced: boolean;
 }
 
+export interface QuestionRecord {
+  id: string;
+  subjectId: string;
+  date: string;
+  correct: number;
+  total: number;
+}
+
 export interface StudyData {
   subjects: Subject[];
   totalSubjects: number;
   studiedCount: number;
   reviewedCount: number;
   practicedCount: number;
+  questionRecords: QuestionRecord[];
 }
 
 export interface CategoryProgress {
@@ -23,4 +32,11 @@ export interface CategoryProgress {
   reviewed: number;
   practiced: number;
   completion: number;
+}
+
+export interface SubjectQuestionStats {
+  subjectId: string;
+  totalQuestions: number;
+  totalCorrect: number;
+  accuracy: number;
 }
